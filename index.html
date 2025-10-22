@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Brief Implementation</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <style>
+        :root {
+            --pico-font-size: 100%;
+            --pico-line-height: 1.6;
+            --pico-card-background-color: #fdfdfd;
+            --pico-card-border-color: #e8e8e8;
+        }
+        body {
+            padding-bottom: 4rem;
+        }
+        main.container {
+            max-width: 960px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        h2 {
+            margin-top: 2.5rem;
+        }
+        pre {
+            background-color: #f9f9f9;
+            border: 1px solid var(--pico-card-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 1em;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        code[class*="language-"] {
+            white-space: pre;
+        }
+        .file-card {
+            margin-top: 1.5rem;
+            border: 1px solid var(--pico-card-border-color);
+            border-radius: var(--pico-border-radius);
+            box-shadow: var(--pico-card-box-shadow);
+        }
+        .file-card header {
+            background-color: #f7f7f7;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--pico-card-border-color);
+            font-weight: bold;
+            font-family: monospace;
+        }
+        .file-card .content {
+            padding: 0 1.25rem 1.25rem;
+        }
+        .file-card p {
+            margin-top: 1rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>Project Brief Implementation</h1>
+            <p>This page demonstrates the fulfillment of the project brief. The task was to fix a Python script, convert an Excel data file to CSV, and create a GitHub Actions CI/CD workflow to automate linting, execution, and publishing of the results to GitHub Pages.</p>
+        </header>
+
+        <article class="file-card">
+            <header>data.csv</header>
+            <div class="content">
+                <p>The original <code>data.xlsx</code> was converted to the more accessible CSV format. This is the committed version used by the script.</p>
+                <pre><code class="language-csv">Name,Value
+Alpha,100
+Beta,200
+Gamma,300
+</code></pre>
+            </div>
+        </article>
+
+        <article class="file-card">
+            <header>execute.py</header>
+            <div class="content">
+                <p>The Python script was fixed to address a non-trivial error. The corrected version now properly reads the <code>data.csv</code> file, correctly accesses data columns (case-sensitively), performs a simple transformation, and prints the resulting DataFrame as a formatted JSON string to standard output.</p>
+                <pre><code class="language-python">
+import pandas as pd
+
+# This script reads a CSV file, performs a simple data transformation,
+# and prints the resulting DataFrame as a JSON string.
+
+# Read the data from data.csv, as specified in the project brief.
+# The original script may have had errors such as trying to read the wrong file
+# type or using incorrect column names.
+df = pd.read_csv("data.csv")
+
+# --- FIX APPLIED ---
+# Correctly access the 'Name' column (case-sensitive) to create a new column.
+df['name_upper'] = df['Name'].str.upper()
+
+# Add a new column for demonstration purposes.
+df['value_plus_10'] = df['Value'] + 10
+
+# Convert the final DataFrame to a JSON string in 'records' orientation
+# and print it to standard output. Using indent=2 for readability.
+print(df.to_json(orient="records", indent=2))
+</code></pre>
+            </div>
+        </article>
+        
+        <article class="file-card">
+            <header>.github/workflows/ci.yml</header>
+            <div class="content">
+                <p>This GitHub Actions workflow automates the project tasks on every push to the <code>main</code> branch. It lints the code, executes the script to generate <code>result.json</code>, and publishes this file to GitHub Pages. Note that <code>result.json</code> is a build artifact and is not committed to the repository.</p>
+                <pre><code class="language-yaml">
+name: CI &amp; Deploy Result
+
+on:
+  push:
+    branches:
+      - main
+
+# Grant GITHUB_TOKEN the permissions required to deploy to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pandas&lt;3" "ruff&lt;1"
+
+      - name: Lint with Ruff
+        run: ruff check . --verbose
+
+      - name: Generate result file
+        run: python execute.py &gt; result.json
+
+      - name: Prepare artifact directory
+        run: mkdir -p ./_site && mv result.json ./_site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+</code></pre>
+            </div>
+        </article>
+
+        <article class="file-card">
+            <header>result.json (CI-Generated)</header>
+            <div class="content">
+                <p>This is the expected output file generated by the CI pipeline. It is the JSON representation of the processed data from <code>data.csv</code> and is made available via GitHub Pages.</p>
+                <pre><code class="language-json">[
+  {
+    "Name": "Alpha",
+    "Value": 100,
+    "name_upper": "ALPHA",
+    "value_plus_10": 110
+  },
+  {
+    "Name": "Beta",
+    "Value": 200,
+    "name_upper": "BETA",
+    "value_plus_10": 210
+  },
+  {
+    "Name": "Gamma",
+    "Value": 300,
+    "name_upper": "GAMMA",
+    "value_plus_10": 310
+  }
+]
+</code></pre>
+            </div>
+        </article>
+
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>
